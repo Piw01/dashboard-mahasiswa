@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard CRUD Mahasiswa</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --calm-blue: #3b6ea5;
+      --calm-blue-100: #f0f6ff;
+      --calm-blue-200: #e3efff;
+      --calm-blue-300: #d3e3f8;
+    }
+    body {
+      background: linear-gradient(180deg, #eaf2ff 0%, #f7fbff 40%, #ffffff 100%);
+      min-height: 100vh;
+    }
+    .navbar {
+      background-color: #f8fbff !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .card {
+      background-color: #f9fbff;
+      border-color: #d7e4f5;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .stat-card {
+      border-left: 4px solid var(--calm-blue);
+      transition: transform 0.3s;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    .table thead {
+      background-color: var(--calm-blue-100);
+    }
+    .table thead th {
+      color: #264c78;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background-color: var(--calm-blue);
+      border-color: var(--calm-blue);
+    }
+    .btn-primary:hover {
+      background-color: #325e8a;
+      border-color: #325e8a;
+    }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .loading-overlay.active {
+      display: flex;
+    }
+    .badge-gender-l {
+      background-color: #3b6ea5;
+      color: white;
+    }
+    .badge-gender-p {
+      background-color: #f093fb;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg border-bottom sticky-top">
+    <div class="container">
+      <span class="navbar-brand fw-semibold">Dashboard Mahasiswa</span>
+      <div class="d-flex gap-2">
+        <span class="navbar-text me-3" id="userInfo">Loading...</span>
+        <button class="btn btn-outline-danger btn-sm" id="btnLogout">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-lg-4">
+        <div class="card h-100 shadow-sm stat-card">
+          <div class="card-body">
+            <div class="text-secondary small">Total Mahasiswa</div>
+            <div class="display-6 fw-semibold" id="statTotal">0</div>
+            <div class="text-secondary small">Data dari API</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-4">
+        <div class="card h-100 shadow-sm stat-card">
+          <div class="card-body">
+            <div class="text-secondary small">Laki-laki</div>
+            <div class="display-6 fw-semibold" id="statL">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-4">
+        <div class="card h-100 shadow-sm stat-card">
+          <div class="card-body">
+            <div class="text-secondary small">Perempuan</div>
+            <div class="display-6 fw-semibold" id="statP">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <!-- Controls -->
+        <div class="row g-2 align-items-end mb-3">
+          <div class="col-12 col-md-5">
+            <label class="form-label">Cari (NIM / Nama)</label>
+            <input type="text" class="form-control" id="searchInput" placeholder="Ketik NIM atau nama">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Jenis Kelamin</label>
+            <select class="form-select" id="filterGender">
+              <option value="">Semua</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <button class="btn btn-outline-secondary w-100" id="btnReset">Reset</button>
+          </div>
+          <div class="col-12 col-md-2">
+            <button class="btn btn-primary w-100" id="btnAdd">Tambah</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle">
+            <thead>
+              <tr>
+                <th>NIM</th>
+                <th>Nama</th>
+                <th>Tempat Lahir</th>
+                <th>Tanggal Lahir</th>
+                <th>Jenis Kelamin</th>
+                <th>Telepon</th>
+                <th>Alamat</th>
+                <th style="width: 150px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr>
+                <td colspan="8" class="text-center">
+                  <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                  Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Form -->
+  <div class="modal fade" id="mahasiswaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah Mahasiswa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="mahasiswaForm">
+          <div class="modal-body">
+            <input type="hidden" id="formMode" value="add">
+            <input type="hidden" id="originalNim">
+            
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label">NIM *</label>
+                <input type="text" class="form-control" id="nim" required>
+              </div>
+              <div class="col-12 col-md-8">
+                <label class="form-label">Nama *</label>
+                <input type="text" class="form-control" id="nama" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Tempat Lahir *</label>
+                <input type="text" class="form-control" id="tempatLahir" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Tanggal Lahir *</label>
+                <input type="date" class="form-control" id="tanggalLahir" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Jenis Kelamin *</label>
+                <select class="form-select" id="jenisKelamin" required>
+                  <option value="">Pilih</option>
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Telepon *</label>
+                <input type="text" class="form-control" id="telepon" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Alamat *</label>
+                <textarea class="form-control" id="alamat" rows="2" required></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ============ KONFIGURASI API ============
+    const API_BASE_URL = 'http://localhost/latihan_crud/public';
+    const API_MAHASISWA = `${API_BASE_URL}/api.php?resource=mahasiswa`;
+    const API_LOGIN = `${API_BASE_URL}/apilogin.php`;
+
+    // ============ STATE ============
+    let allData = [];
+    let filteredData = [];
+    let currentUser = null;
+    const modal = new bootstrap.Modal(document.getElementById('mahasiswaModal'));
+
+    // ============ HELPER FUNCTIONS ============
+    function showLoading(show = true) {
+      document.getElementById('loadingOverlay').classList.toggle('active', show);
+    }
+
+    function showAlert(message, type = 'success') {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.getElementById('alertContainer').appendChild(alertDiv);
+      
+      setTimeout(() => {
+        alertDiv.remove();
+      }, 5000);
+    }
+
+    async function apiRequest(url, options = {}) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok && response.status === 401) {
+          window.location.href = 'login.html';
+          return null;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('API Error:', error);
+        showAlert('Terjadi kesalahan koneksi ke server', 'danger');
+        return null;
+      }
+    }
+
+    // ============ DATA MANAGEMENT ============
+    async function loadMahasiswa() {
+      showLoading();
+      const result = await apiRequest(API_MAHASISWA);
+      showLoading(false);
+
+      if (result && result.success) {
+        allData = result.data || [];
+        applyFilters();
+      } else {
+        showAlert('Gagal memuat data mahasiswa', 'danger');
+      }
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const gender = document.getElementById('filterGender').value;
+
+      filteredData = allData.filter(item => {
+        const matchSearch = !search || 
+          item.nim.toLowerCase().includes(search) ||
+          item.nama.toLowerCase().includes(search);
+        const matchGender = !gender || item.jenis_kelamin === gender;
+        return matchSearch && matchGender;
+      });
+
+      renderTable();
+      updateStats();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      
+      if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-secondary">Tidak ada data</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filteredData.map(item => `
+        <tr>
+          <td>${item.nim}</td>
+          <td><strong>${item.nama}</strong></td>
+          <td>${item.tempat_lahir}</td>
+          <td>${formatDate(item.tanggal_lahir)}</td>
+          <td>
+            <span class="badge ${item.jenis_kelamin === 'Laki-laki' ? 'badge-gender-l' : 'badge-gender-p'}">
+              ${item.jenis_kelamin}
+            </span>
+          </td>
+          <td>${item.telepon || '-'}</td>
+          <td>${item.alamat || '-'}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" onclick="editMahasiswa('${item.nim}')">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteMahasiswa('${item.nim}', '${item.nama}')">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateStats() {
+      document.getElementById('statTotal').textContent = allData.length;
+      document.getElementById('statL').textContent = allData.filter(m => m.jenis_kelamin === 'Laki-laki').length;
+      document.getElementById('statP').textContent = allData.filter(m => m.jenis_kelamin === 'Perempuan').length;
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    // ============ CRUD OPERATIONS ============
+    async function saveMahasiswa(e) {
+      e.preventDefault();
+      
+      const formData = {
+        nim: document.getElementById('nim').value,
+        nama: document.getElementById('nama').value,
+        tempat_lahir: document.getElementById('tempatLahir').value,
+        tanggal_lahir: document.getElementById('tanggalLahir').value,
+        jenis_kelamin: document.getElementById('jenisKelamin').value,
+        telepon: document.getElementById('telepon').value,
+        alamat: document.getElementById('alamat').value
+      };
+
+      const mode = document.getElementById('formMode').value;
+      const originalNim = document.getElementById('originalNim').value;
+
+      showLoading();
+      let result;
+
+      if (mode === 'edit') {
+        result = await apiRequest(`${API_MAHASISWA}&nim=${originalNim}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
+      } else {
+        result = await apiRequest(API_MAHASISWA, {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
+      }
+
+      showLoading(false);
+
+      if (result && result.success) {
+        showAlert(result.message, 'success');
+        modal.hide();
+        document.getElementById('mahasiswaForm').reset();
+        await loadMahasiswa();
+      } else {
+        showAlert(result?.message || 'Gagal menyimpan data', 'danger');
+      }
+    }
+
+    function editMahasiswa(nim) {
+      const data = allData.find(m => m.nim === nim);
+      if (!data) return;
+
+      document.getElementById('formMode').value = 'edit';
+      document.getElementById('originalNim').value = nim;
+      document.getElementById('modalTitle').textContent = 'Edit Mahasiswa';
+      document.getElementById('nim').value = data.nim;
+      document.getElementById('nim').readOnly = true;
+      document.getElementById('nama').value = data.nama;
+      document.getElementById('tempatLahir').value = data.tempat_lahir;
+      document.getElementById('tanggalLahir').value = data.tanggal_lahir;
+      document.getElementById('jenisKelamin').value = data.jenis_kelamin;
+      document.getElementById('telepon').value = data.telepon || '';
+      document.getElementById('alamat').value = data.alamat || '';
+      
+      modal.show();
+    }
+
+    async function deleteMahasiswa(nim, nama) {
+      if (!confirm(`Hapus data ${nama} (${nim})?`)) return;
+
+      showLoading();
+      const result = await apiRequest(`${API_MAHASISWA}&nim=${nim}`, { method: 'DELETE' });
+      showLoading(false);
+
+      if (result && result.success) {
+        showAlert(result.message, 'success');
+        await loadMahasiswa();
+      } else {
+        showAlert(result?.message || 'Gagal menghapus data', 'danger');
+      }
+    }
+
+    // ============ EVENT LISTENERS ============
+    document.getElementById('btnAdd').addEventListener('click', () => {
+      document.getElementById('formMode').value = 'add';
+      document.getElementById('modalTitle').textContent = 'Tambah Mahasiswa';
+      document.getElementById('nim').readOnly = false;
+      document.getElementById('mahasiswaForm').reset();
+      modal.show();
+    });
+
+    document.getElementById('mahasiswaForm').addEventListener('submit', saveMahasiswa);
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('filterGender').addEventListener('change', applyFilters);
+    document.getElementById('btnReset').addEventListener('click', () => {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterGender').value = '';
+      applyFilters();
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      if (!confirm('Yakin ingin logout?')) return;
+      
+      await apiRequest(`${API_LOGIN}?action=logout`, { method: 'POST' });
+      window.location.href = 'login.html';
+    });
+
+    // ============ INIT ============
+    async function checkAuth() {
+      const result = await apiRequest(`${API_LOGIN}?action=me`);
+      if (!result || !result.success) {
+        window.location.href = 'login.html';
+        return false;
+      }
+      currentUser = result.data.username;
+      document.getElementById('userInfo').textContent = `Hi, ${currentUser}`;
+      return true;
+    }
+
+    async function init() {
+      const isAuth = await checkAuth();
+      if (isAuth) {
+        await loadMahasiswa();
+      }
+    }
+
+    // Start application
+    init();
+  </script>
+</body>
+</html>
